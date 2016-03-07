@@ -1,0 +1,11 @@
+# Unwanted files
+build/
+DropboxTags.txt
+dropboxAccess.txt
+manifest.mf
+
+# Backup files
+.DS_Store
+thumbs.db
+*~
+*.swp
