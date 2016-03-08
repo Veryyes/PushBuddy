@@ -21,7 +21,7 @@ public class CloudThread extends Thread {
             System.out.println("Syncing Dropbox...");
             cloud.syncLocalChanges();
             cloud.syncRemoteChanges();
-            cloud.waitForChanges();
+            cloud.waitForChanges(); //Program waits at this method to look for changes
         }
     }
 }
