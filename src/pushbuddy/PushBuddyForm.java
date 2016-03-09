@@ -147,15 +147,6 @@ public class PushBuddyForm extends javax.swing.JFrame {
                     e.printStackTrace();
                 }
                 System.out.println("Finished Writing to file");
-                PushBuddy.db.readTagFile(); //Updates the tagged files in memory
-                for(java.io.File f:selectedFiles){ //uploads the newly tagged files
-                    try{
-                        PushBuddy.db.upload(f);
-                    }catch(IOException | DbxException e){
-                        e.printStackTrace();
-                        PushBuddy.db.uploadList.add(f);
-                    }
-                }
                 break;
             case "Google Drive":
                 try(FileWriter fw = new FileWriter("GoogleDriveTags.txt",true)){

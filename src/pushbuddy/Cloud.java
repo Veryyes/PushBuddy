@@ -3,6 +3,9 @@ package pushbuddy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -19,8 +22,8 @@ public abstract class Cloud {
     
     protected WatchService watcher;
     protected ArrayList<WatchKey> watchedFiles;
-    protected LinkedList<File> uploadList; //list of files that could not be uploaded due to internet disruptions
-    
+ 
+    protected WatchKey tagKey;
     public Cloud(String tagFile, String authFilePath) {
         try {
             // Set up tag database file.
@@ -38,7 +41,10 @@ public abstract class Cloud {
             // Set up file watcher.
             watcher = FileSystems.getDefault().newWatchService();
             watchedFiles = new ArrayList<>();
-            uploadList = new LinkedList<>();
+            
+            System.out.println(new File(tagFile).getAbsoluteFile().toPath().getParent());
+            
+            tagKey = new File(tagFile).getAbsoluteFile().toPath().getParent().register(watcher, ENTRY_MODIFY);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -77,5 +83,9 @@ public abstract class Cloud {
     /**
      * Uploads files in uploadList which could not be uploaded earlier due to connection issues
      */
-    public abstract void pushInterruptedFiles();
+  //  public abstract void pushInterruptedFiles();
+    /**
+     * Pings the cloud service until program gets a response
+     */
+    public abstract void pingService();
 }

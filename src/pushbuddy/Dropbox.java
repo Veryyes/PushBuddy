@@ -14,7 +14,6 @@ import java.util.Locale;
 import java.util.HashSet;
 import javax.swing.JOptionPane;
 import static java.nio.file.StandardWatchEventKinds.*;
-import java.util.LinkedList;
 
 /**
  * Provides Dropbox cloud API support.
@@ -130,11 +129,21 @@ public class Dropbox extends Cloud{
                                                    ENTRY_DELETE, ENTRY_MODIFY);
                     
                     recursiveWatch(localPath);
+                    
                 } else {
                     key = target.toPath().getParent().register(watcher,
                                                                ENTRY_CREATE,
                                                                ENTRY_DELETE,
                                                                ENTRY_MODIFY);
+                    
+                    if(!existsOnCloud(target.toPath())){
+                        System.out.println("Uploading!");
+                        try{ 
+                            upload(target);
+                        }catch(DbxException | IOException e){
+                            e.printStackTrace();
+                        }
+                    }
                 }
                 
                 watchedFiles.add(key);
@@ -155,6 +164,15 @@ public class Dropbox extends Cloud{
                                        ENTRY_DELETE, ENTRY_MODIFY);
                     watchedFiles.add(key);
                     recursiveWatch(sub.getAbsolutePath());
+                }else{
+                    if(!existsOnCloud(sub.toPath())){
+                        System.out.println("Uploading!");
+                        try{ 
+                            upload(sub);
+                        }catch(DbxException | IOException e){
+                            e.printStackTrace();
+                        }
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -172,16 +190,26 @@ public class Dropbox extends Cloud{
      * @return true if successful
      */
     public void upload(File file) throws DbxException, IOException{
-        String cloudPath = tags.getCloudPath(file.toString());
-        System.err.println("Local file modified: " + cloudPath);
-        FileInputStream fis = new FileInputStream(file);
-        DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.update(""), file.length(), fis);   
+        if(!file.isDirectory()){
+            String cloudPath = tags.getCloudPath(file.toString());
+            System.err.println("Local file modified: " + cloudPath);
+            FileInputStream fis = new FileInputStream(file);
+            DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.update(""), file.length(), fis);  
+        }
     }
     @Override
     /**
      * If there are changes on local side, upload to dropbox
      */
     public void syncLocalChanges() {
+        for (WatchEvent<?> event: tagKey.pollEvents()){
+            WatchEvent<Path> pathEvent = (WatchEvent<Path>)event;
+            WatchEvent.Kind<?> kind = pathEvent.kind();
+            
+            if(kind == ENTRY_MODIFY){
+                readTagFile();
+            }
+        }
         for (WatchKey key : watchedFiles) {
             System.err.println("Key: " + (Path)(key.watchable()));
             for (WatchEvent<?> event : key.pollEvents()) {
@@ -201,10 +229,12 @@ public class Dropbox extends Cloud{
                     if (cloudPath != null) {
                         File file = new File(fpath);
                         try{
-                            upload(file);
+                            if(!file.isDirectory()){
+                                upload(file);
+                            }
                         }catch(IOException | DbxException e){
                             e.printStackTrace();
-                            uploadList.add(file);
+                            //uploadList.add(file);
                         }
                         /*
                         try (FileInputStream fis = new FileInputStream(file)) {
@@ -259,7 +289,7 @@ public class Dropbox extends Cloud{
             try {
                 //System.out.println("Waiting for changes");
                 Thread.sleep(1000);
-                pushInterruptedFiles();
+                //pushInterruptedFiles();
                 //Remote Changes
                 try {
                     changes = client.getDelta(returnedFiles);
@@ -278,13 +308,16 @@ public class Dropbox extends Cloud{
                     System.err.println("Key: " + (Path)(w.watchable()));
                     fileChanged = true;
                 }
+                
+                //Tag File Changes
+                
             } catch(InterruptedException e){
                 e.printStackTrace();
                 System.err.println("[LOCAL CHANGE ERROR]");
             }
         }
     }
-    @Override
+    /*@Override
     public void pushInterruptedFiles() {
         LinkedList<Integer> indiciesToRemove = new LinkedList<>();
         int i = 0;
@@ -301,5 +334,28 @@ public class Dropbox extends Cloud{
         for(Integer num: indiciesToRemove){
             uploadList.remove(num.intValue());
         }
+    }*/
+    @Override
+    public void pingService(){
+        boolean canReach = false;
+        while(!canReach){
+            try(Socket socket = new Socket()){
+                socket.connect(new InetSocketAddress("dropbox.com",80),2000);
+                canReach = true;
+            }catch(IOException e){
+                canReach = false;
+            }
+            System.out.println(canReach);
+        }
+    }
+    public boolean existsOnCloud(Path path){
+        //return tags.getCloudPath(path.toString())!=null;
+        try{
+            System.out.println(client.getMetadata(tags.getCloudPath(path.toString())));
+            return client.getMetadata(tags.getCloudPath(path.toString()))!=null;                    
+        }catch(DbxException e){
+            e.printStackTrace();
+        }
+        return false;
     }
 }
