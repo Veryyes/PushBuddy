@@ -97,21 +97,19 @@ public class Dropbox extends Cloud {
      * @param file the local target file
      * @throws DbxException, IOException
      */
-    public void upload(File file) throws DbxException, IOException {
+    private void upload(File file) throws DbxException, IOException {
         if (file.isFile()) {
-            System.out.println(file);
             String cloudPath = tags.getRemotePath(file.toPath());
-            System.err.println("Local file modified: " + cloudPath);
+            System.err.println("Uploading " + file);
             FileInputStream fis = new FileInputStream(file);
-            DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.update(""), file.length(), fis);
+            DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.force(), file.length(), fis);
+            fis.close();
         }
     }
     
     @Override
     public void syncLocalChanges() {
-        System.out.println("Syncing local changes...");
-        
-        for (Path p: tags.getLocalFiles()) {
+        for (Path p : tags.getLocalFiles()) {
             if (!existsOnCloud(p)) {
                 File file = p.toFile();
                 
@@ -134,11 +132,10 @@ public class Dropbox extends Cloud {
                 if (kind == ENTRY_DELETE) {
                     // If the gui option is selected, either  delete the local
                     // file or do nothing.
-                } else if (kind == ENTRY_MODIFY) {
+                } else {
                     // If this file is tagged, then upload it to the cloud.
-                    if (existsOnCloud(Paths.get(fpath))) {
-                        System.out.println("Uploading Local Changes");
-                        File file = new File(fpath);
+                    File file = new File(fpath);
+                    if (file.isFile() || existsOnCloud(file.toPath())) {
                         try {
                             upload(file);
                         } catch (IOException | DbxException e) {
@@ -157,16 +154,14 @@ public class Dropbox extends Cloud {
 
     @Override
     public void syncRemoteChanges() {
-        System.out.println("Syncing remote changes...");
-        
         for (DbxDelta.Entry delta : changes.entries) {
+            // Entry was deleted.
             if (delta.metadata == null) {
-                // Entry was deleted on dropbox
-                System.out.println("File Not Found on Dropbox! - Uploading");
+                System.out.println("File was deleted! What do you want to do?");
                 continue;
             }
             
-            // Entry is there
+            // Entry still exists on cloud.
             try {
                 DbxEntry ent = client.getMetadata(delta.lcPath);
                 if (ent.isFile()) {
@@ -186,8 +181,6 @@ public class Dropbox extends Cloud {
     
     @Override
     public void waitForChanges() {
-        System.out.println("Waiting for changes...");
-        
         boolean fileChanged = false;
         while (!fileChanged) {
             try {
@@ -224,7 +217,6 @@ public class Dropbox extends Cloud {
         try {
             return client.getMetadata(tags.getRemotePath(path)) != null;
         } catch (DbxException | IllegalArgumentException e) {
-            System.out.println("Can't find it on cloud!");
             return false;
         }
     }

@@ -70,18 +70,23 @@ public class Tags {
      * @param local location on the local file system
      */
     public void add(Path local) {
-        if (!local.toFile().exists()) {
+        File target = local.toFile();
+        
+        if (!target.exists()) {
             return;
         }
         
-        if (local.toFile().isFile()) {
-            Path localRelative = local.getParent().relativize(local);
-            String cloud = ("/" + localRelative).replace("\\", "/");
-            tags.put(cloud, local);
-            return;
-        }
-
         try {
+            if (local.toFile().isFile()) {
+                Path localRelative = local.getParent().relativize(local);
+                String cloud = ("/" + localRelative).replace("\\", "/");
+                tags.put(cloud, local);
+                
+                watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE,
+                                                       ENTRY_DELETE, ENTRY_MODIFY));
+                return;
+            }
+            
             watched.add(local.register(fileWatcher, ENTRY_CREATE, ENTRY_DELETE,
                                        ENTRY_MODIFY));
             
@@ -102,7 +107,7 @@ public class Tags {
                      }
                  });
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println(local + " could not be accessed!");
         }
     }
     
@@ -126,7 +131,7 @@ public class Tags {
                 return e.getKey();
             }
         }
-        return null;
+        return "";
     }
     
     /**

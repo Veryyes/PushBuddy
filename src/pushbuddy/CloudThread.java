@@ -25,9 +25,13 @@ public class CloudThread extends Thread {
         cloud.authenticate();
         
         while (running) {
+            System.out.println("Pinging cloud service...");
             cloud.verifyIfUp();
+            System.out.println("Syncing local changes...");
             cloud.syncLocalChanges();
+            System.out.println("Syncing remote changes...");
             cloud.syncRemoteChanges();
+            System.out.println("Waiting for changes...");
             cloud.waitForChanges();
         }
     }

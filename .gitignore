@@ -1,7 +1,7 @@
 # Unwanted files
 build/
-DropboxTags.txt
-dropboxAccess.txt
+*Tags.txt
+*Access.txt
 manifest.mf
 
 # Backup files
