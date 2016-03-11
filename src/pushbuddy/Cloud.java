@@ -37,20 +37,50 @@ public abstract class Cloud {
     public abstract void authenticate();
     
     /**
-     * Iterate over all tagged local files and apply changes.
+     * Iterates over all tagged local files and apply changes.
      */
     public abstract void syncLocalChanges();
     
     /**
-     * Iterate over all tagged remote files and apply changes.
+     * Iterates over all tagged remote files and apply changes.
      */
     public abstract void syncRemoteChanges();
     
     /**
-     * Block the current thread and don't return until changes are
+     * Checks whether any remote files were changed.
+     * @return true if changed, false otherwise
+     */
+    public abstract boolean remoteFilesChanged();
+    
+    /**
+     * Blocks the current thread and don't return until changes are
      * detected.
      */
-    public abstract void waitForChanges();
+    public void waitForChanges() {
+        boolean fileChanged = false;
+        while (!fileChanged) {
+            try {
+                Thread.sleep(1000);
+                
+                // Remote changes
+                if (remoteFilesChanged()) {
+                    fileChanged = true;
+                }
+                
+                //Local Changes
+                if (tags.localFilesChanged()) {
+                    fileChanged = true;
+                } else if (tags.tagFileChanged()) {
+                    tags.clear();
+                    tags.rebuildData();
+                    fileChanged = true;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println("[LOCAL CHANGE ERROR]");
+            }
+        }
+    }
     
     /**
      * Pings the given cloud server indefinitely until it gets a response.

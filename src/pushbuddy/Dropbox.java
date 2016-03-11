@@ -185,37 +185,19 @@ public class Dropbox extends Cloud {
     }
     
     @Override
-    public void waitForChanges() {
-        boolean fileChanged = false;
-        while (!fileChanged) {
-            try {
-                Thread.sleep(1000);
-                
-                //Remote Changes
-                try {
-                    changes = client.getDelta(returnedFiles);
-                    returnedFiles = changes.cursor;
-                    if (!changes.entries.isEmpty()) {
-                        fileChanged = true;
-                    }
-                } catch (DbxException e) {
-                    e.printStackTrace();
-                    System.err.println("[REMOTE CHANGE ERROR] Check internet connection");
-                }
-                
-                //Local Changes
-                if (tags.localFilesChanged()) {
-                    fileChanged = true;
-                } else if (tags.tagFileChanged()) {
-                    tags.clear();
-                    tags.rebuildData();
-                    fileChanged = true;
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                System.err.println("[LOCAL CHANGE ERROR]");
+    public boolean remoteFilesChanged() {
+        try {
+            changes = client.getDelta(returnedFiles);
+            returnedFiles = changes.cursor;
+            if (!changes.entries.isEmpty()) {
+                return true;
             }
+        } catch (DbxException e) {
+            e.printStackTrace();
+            System.err.println("[REMOTE CHANGE ERROR] Check internet connection");
         }
+        
+        return false;
     }
     
     public boolean existsOnCloud(Path path){
