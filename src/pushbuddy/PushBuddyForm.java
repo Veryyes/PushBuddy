@@ -5,6 +5,7 @@
  */
 package pushbuddy;
 
+import com.dropbox.core.DbxException;
 import java.awt.AWTException;
 import java.awt.Image;
 import java.awt.MenuItem;
@@ -173,7 +174,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
 
     private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
         //CloudThread.running = false;
-        System.out.println("Deactivate");
+        //System.out.println("Deactivate");
     }//GEN-LAST:event_formWindowDeactivated
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
@@ -183,7 +184,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
             return;
         }
         final PopupMenu popup = new PopupMenu();
-        Image ico = Toolkit.getDefaultToolkit().getImage(PushBuddyForm.class.getResource("Final_pushbuddy_32px.png"));
+        Image ico = Toolkit.getDefaultToolkit().getImage(PushBuddyForm.class.getResource("pushbuddyTaskBar.png"));
         ico = ico.getScaledInstance(16, 16, Image.SCALE_DEFAULT);
         final TrayIcon trayIcon =
                 new TrayIcon(ico, "PushBuddy");

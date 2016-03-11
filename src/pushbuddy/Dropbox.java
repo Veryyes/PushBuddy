@@ -28,8 +28,9 @@ public class Dropbox extends Cloud{
     private DbxDelta<DbxEntry> changes = null;
     private String returnedFiles = null;
     
+    
     public Dropbox(String tagFile, String authFilePath) {
-        super(tagFile, authFilePath);
+        super(tagFile, authFilePath); 
     }
     
     @Override
@@ -97,52 +98,59 @@ public class Dropbox extends Cloud{
         }
     }
     
-    @Override
-    public void readTagFile() {       
-        // Parse the tag file and watch our local data.
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(tagFilePath)))){
-            String line;
-            while ((line = br.readLine()) != null) {
-                // Load tags.
-                Path cloudPath = Paths.get(line.split(";")[0]);
-                Path localPath = Paths.get(line.split(";")[1]);
-                tags.add(cloudPath, localPath);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    /**
+     * Uploads a file
+     * @param file the file to upload
+     * @return true if successful
+     */
+    public void upload(File file) throws DbxException, IOException{
+        if(file.isFile()){
+            System.out.println(file);
+            String cloudPath = tags.getRemotePath(file.toPath());
+            System.err.println("Local file modified: " + cloudPath);
+            FileInputStream fis = new FileInputStream(file);
+            DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.update(""), file.length(), fis);
         }
-        tags.printContents();
     }
-    
     @Override
-    public void writeTagFile() {
-        
-    }
-    
-    @Override
+    /**
+     * If there are changes on local side, upload to dropbox
+     */
     public void syncLocalChanges() {
+        for (Path p: tags.getLocalFiles()) {
+            if (!existsOnCloud(p)) {
+                
+                File file = new File(p.toUri());
+                try {
+                    if (!file.isDirectory()) {
+                        upload(file);
+                    }
+                } catch (IOException | DbxException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         for (WatchKey key : tags.getWatchedDirs()) {
-            System.err.println("Key: " + (Path)(key.watchable()));
+            //System.err.println("Key: " + (Path)(key.watchable()));
             for (WatchEvent<?> event : key.pollEvents()) {
                 WatchEvent<Path> pathEvent = (WatchEvent<Path>)event;
                 WatchEvent.Kind<?> kind = pathEvent.kind();
                 
                 String dpath = ((Path)key.watchable()).toString();
-                String fpath = dpath + "/" + pathEvent.context();
+                String fpath = dpath + File.separator + pathEvent.context();
                 
                 if (kind == ENTRY_DELETE) {
                     // If the gui option is selected, delete the local file or do nothing
                 } else if (kind == ENTRY_MODIFY) {
                     // If this file is tagged, then upload it to the cloud.
-                    String cloudPath = tags.getRemotePath(Paths.get(fpath)).toString();
-                    System.err.println("Local file modified: " + cloudPath);
-                    
-                    if (cloudPath != null) {
+                    if (existsOnCloud(Paths.get(fpath))) {
+                        System.out.println("Uploading Local Changes");
                         File file = new File(fpath);
-                        
-                        try (FileInputStream fis = new FileInputStream(file)) {
-                            DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.update(""), file.length(), fis);
-                        } catch (DbxException | IOException e) {
+                        try {
+                            if (!file.isDirectory()) {
+                                upload(file);
+                            }
+                        } catch (IOException | DbxException e) {
                             e.printStackTrace();
                         }
                     }
@@ -157,9 +165,12 @@ public class Dropbox extends Cloud{
     }
     
     @Override
+    /**
+     * If there are changes on dropbox side, then make changes on the local side
+     */
     public void syncRemoteChanges() {
         for (DbxDelta.Entry delta : changes.entries) {
-            System.err.println("Downloading Files");
+            //System.err.println("Downloading Files");
             if (delta.metadata == null) {
                 // Entry was deleted on dropbox
                 System.out.println("File Not Found on Dropbox! - Uploading");
@@ -170,6 +181,7 @@ public class Dropbox extends Cloud{
                     if (ent.isFile()) {
                         Path remote = Paths.get(ent.path);
                         String local = tags.getLocalPath(remote).toString();
+                        
                         try (FileOutputStream fos = new FileOutputStream(local)) {
                             client.getFile(ent.path, null, fos); //Writes file from cloud to ground
                         } catch (DbxException | IOException e) {
@@ -188,9 +200,8 @@ public class Dropbox extends Cloud{
         boolean fileChanged = false;
         while (!fileChanged) {
             try {
-                System.out.println("Waiting for changes");
+                //System.out.println("Waiting for changes");
                 Thread.sleep(1000);
-                
                 //Remote Changes
                 try {
                     changes = client.getDelta(returnedFiles);
@@ -200,15 +211,44 @@ public class Dropbox extends Cloud{
                     }
                 } catch (DbxException e) {
                     e.printStackTrace();
+                    System.err.println("[REMOTE CHANGE ERROR] Check internet connection");
                 }
                 
                 //Local Changes
-                if (tags.localFilesChanged()) {
+                if(tags.localFilesChanged()){
+                    fileChanged = true;
+                }else if(tags.tagFileChanged()){
+                    tags.clear();
+                    tags.rebuildData();
                     fileChanged = true;
                 }
             } catch(InterruptedException e){
                 e.printStackTrace();
+                System.err.println("[LOCAL CHANGE ERROR]");
             }
+        }
+    }
+    
+    @Override
+    public void pingService(){
+        boolean canReach = false;
+        while(!canReach){
+            try(Socket socket = new Socket()){
+                socket.connect(new InetSocketAddress("dropbox.com",80),2000);
+                canReach = true;
+            }catch(IOException e){
+                canReach = false;
+            }
+            System.out.println(canReach);
+        }
+    }
+    public boolean existsOnCloud(Path path){
+        try{
+            //System.out.println(client.getMetadata(tags.getRemotePath(path).toString()));
+            client.getMetadata(tags.getRemotePath(path));
+            return true;
+        }catch(DbxException | IllegalArgumentException e){
+            return false;
         }
     }
 }

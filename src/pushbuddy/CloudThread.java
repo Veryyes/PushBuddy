@@ -15,13 +15,13 @@ public class CloudThread extends Thread {
     
     public void run() {
         cloud.authenticate();
-        cloud.readTagFile();
-        
         while (running) {
             System.out.println("Syncing Dropbox...");
+            //Ping Respective Cloud Service
+            cloud.pingService();
             cloud.syncLocalChanges();
             cloud.syncRemoteChanges();
-            cloud.waitForChanges();
+            cloud.waitForChanges(); //Program waits at this method to look for changes
         }
     }
 }

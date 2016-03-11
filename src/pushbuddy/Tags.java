@@ -1,6 +1,9 @@
 package pushbuddy;
 
+import com.dropbox.core.DbxException;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -16,6 +19,8 @@ import static java.nio.file.StandardWatchEventKinds.*;
  * @author Eyal Kalderon
  */
 public class Tags {
+    private File tagFile;
+    private WatchKey tagKey;
     private HashMap<Path, Path> tags;
     private ArrayList<WatchKey> watched;
     private WatchService fileWatcher;
@@ -23,28 +28,61 @@ public class Tags {
     /**
      * Creates a new tag database.
      */
-    public Tags() {
+    public Tags(String tagFilePath) {
+        tagFile = new File(tagFilePath);
         tags = new HashMap<>();
         watched = new ArrayList<>();
         
         try {
+            if (!tagFile.exists()) {
+                tagFile.createNewFile();
+            }
+            
             fileWatcher = FileSystems.getDefault().newWatchService();
+            tagKey = Paths.get(tagFile.getAbsolutePath()).getParent().register(fileWatcher, ENTRY_MODIFY);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        rebuildData();
     }
-
+    /**
+     * 
+     */
+    public void rebuildData(){        
+        // Parse the tag file and watch our local data.
+        try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // Load tags.
+                // cloudPath not being used
+                String cloudPath = line.split(";")[0];
+                String localPath = line.split(";")[1];
+                add(Paths.get(localPath));
+            }
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        printContents();
+    }
+    
     /**
      * Adds new tag(s) to the database. If it is a directory, it is traversed
      * recursively.
      * 
-     * @param remote A location on the cloud service.
-     * @param local A location on the local filesystem.
+     * @param local A location on the local file system.
      */
-    public void add(Path remote, Path local) {
-        File root = new File(local.toUri());
-
+    public void add(Path local) {
+        if (local.toFile().isFile()) {
+            Path localRelative = local.getParent().relativize(local);
+            Path cloud = Paths.get("/" + localRelative.toString());
+            tags.put(cloud, local);
+            return;
+        }
+       
         try {
+            watched.add(local.register(fileWatcher, ENTRY_CREATE,
+                                               ENTRY_DELETE,
+                                               ENTRY_MODIFY));
             Files.walk(local)
                  .forEach(sub -> {
                      if (sub.toFile().isDirectory()) {
@@ -81,14 +119,13 @@ public class Tags {
      * @param local The local file/folder location.
      * @return The file/folder location on the cloud server, otherwise null.
      */
-    public Path getRemotePath(Path local) {
+    public String getRemotePath(Path local) {
         for (Map.Entry<Path, Path> e : tags.entrySet()) {
-            if (e.getValue() == local) {
-                return e.getKey();
+            if (e.getValue().equals(local)) {
+                return e.getKey().toString().replace("\\", "/");
             }
         }
-        
-        return null;
+        return "";
     }
     
     /**
@@ -98,6 +135,20 @@ public class Tags {
      */
     public boolean localFilesChanged() {
         return fileWatcher.poll() != null;
+    }
+    
+    /**
+     * 
+     * @return true if tagFile is modified
+     */
+    public boolean tagFileChanged(){
+        for(WatchEvent<?> event: tagKey.pollEvents()){
+            WatchEvent<Path> pathEvent = (WatchEvent<Path>)event;
+            WatchEvent.Kind<?> kind = pathEvent.kind();
+            
+            return kind == ENTRY_MODIFY;
+        }
+        return false;
     }
     
     /**
@@ -120,7 +171,20 @@ public class Tags {
         watched.clear();
         tags.clear();
     }
-
+    
+    /**
+     * 
+     * @return 
+     */
+    public Path[] getLocalFiles(){
+        Path[] p = new Path[tags.values().size()];
+        return tags.values().toArray(p);
+    }
+    
+    public Path[] getRemoteFiles(){
+        Path[] p = new Path[tags.keySet().size()];
+        return tags.keySet().toArray(p);
+    }
     /**
      * Prints the contents of the database to stdout for debugging purposes.
      */

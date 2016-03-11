@@ -9,3 +9,4 @@ manifest.mf
 thumbs.db
 *~
 *.swp
+/dist/
