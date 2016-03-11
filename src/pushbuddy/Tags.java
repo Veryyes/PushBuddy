@@ -1,166 +1,196 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package pushbuddy;
 
+import com.dropbox.core.DbxException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
- * Represents a file with tags
- * file format: pathToFileOnCloud;pathToCorrespondingFileOnLocalMachine\n
- * @author Brandon
+ * A set of tagged files loaded from a file.
+ * File format: /location/on/cloud;/location/on/local/machine\n
+ *
+ * @author Eyal Kalderon
  */
 public class Tags {
-    private static class Tag implements Comparable<Tag> {        
-        String cloudPath;
-        String localPath;
+    private File tagFile;
+    private WatchKey tagKey;
+    private HashMap<Path, Path> tags;
+    private ArrayList<WatchKey> watched;
+    private WatchService fileWatcher;
+
+    /**
+     * Creates a new tag database.
+     */
+    public Tags(String tagFilePath) {
+        tagFile = new File(tagFilePath);
+        tags = new HashMap<>();
+        watched = new ArrayList<>();
         
-        @Override
-        public int compareTo(Tag o) {
-            return this.cloudPath.compareTo(o.cloudPath);
+        try {
+            if (!tagFile.exists()) {
+                tagFile.createNewFile();
+            }
+            
+            fileWatcher = FileSystems.getDefault().newWatchService();
+            tagKey = Paths.get(tagFile.getAbsolutePath()).getParent().register(fileWatcher, ENTRY_MODIFY);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        
-        private Tag(String cloudPath, String localPath ){
-            this.cloudPath=cloudPath;
-            this.localPath=localPath;
-        }
+        rebuildData();
     }
-    
-    private LinkedList<Tag> tags; 
-    private File file;
-    
-    public Tags(File writeFile) {
-        file = writeFile;
-        tags = new LinkedList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(file))){
+    /**
+     * 
+     */
+    public void rebuildData(){        
+        // Parse the tag file and watch our local data.
+        try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] tagComponents = line.split(";");
-                add(tagComponents[0], tagComponents[1]);
+                // Load tags.
+                // cloudPath not being used
+                String cloudPath = line.split(";")[0];
+                String localPath = line.split(";")[1];
+                add(Paths.get(localPath));
             }
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        printContents();
+    }
+    
+    /**
+     * Adds new tag(s) to the database. If it is a directory, it is traversed
+     * recursively.
+     * 
+     * @param local A location on the local file system.
+     */
+    public void add(Path local) {
+        if (local.toFile().isFile()) {
+            Path localRelative = local.getParent().relativize(local);
+            Path cloud = Paths.get("/" + localRelative.toString());
+            tags.put(cloud, local);
+            return;
+        }
+       
+        try {
+            watched.add(local.register(fileWatcher, ENTRY_CREATE,
+                                               ENTRY_DELETE,
+                                               ENTRY_MODIFY));
+            Files.walk(local)
+                 .forEach(sub -> {
+                     if (sub.toFile().isDirectory()) {
+                         try {
+                             watched.add(sub.register(fileWatcher, ENTRY_CREATE,
+                                                      ENTRY_DELETE,
+                                                      ENTRY_MODIFY));
+                         } catch (IOException e) {
+                             e.printStackTrace();
+                         }
+                     } else {
+                         Path localRelative = local.getParent().relativize(sub);
+                         Path cloud = Paths.get("/" + localRelative.toString());
+                         tags.put(cloud, sub);
+                     }
+                 });
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    /**
+     * Get a local path from a cloud service's path.
+     * 
+     * @param remote The remote file/folder location.
+     * @return The file/folder location on the local machine, otherwise null.
+     */
+    public Path getLocalPath(Path remote) {
+        return tags.get(remote);
+    }
     
     /**
-     * Adds a new tagged file 
-     * @param localPath the local path on the machine
-     * @param cloudPath the path of the file on the cloud
-     * @return true if valid parameters are used
+     * Get a remote cloud-hosted path from a local path.
+     * 
+     * @param local The local file/folder location.
+     * @return The file/folder location on the cloud server, otherwise null.
      */
-    public boolean add(String cloudPath, String localPath) {
-        if(localPath==null||cloudPath==null||localPath.length()==0||cloudPath.length()==0)
-            return false;
-
-        File f = new File(localPath);
-        if (f.isDirectory()) {
-            ArrayList<File> files = new ArrayList();
-            files.add(f);
-            getLocalSubfiles(f.toPath(), files);
+    public String getRemotePath(Path local) {
+        for (Map.Entry<Path, Path> e : tags.entrySet()) {
+            if (e.getValue().equals(local)) {
+                return e.getKey().toString().replace("\\", "/");
+            }
+        }
+        return "";
+    }
+    
+    /**
+     * Checks whether any tagged local files changed on the filesystem.
+     * 
+     * @return True there was a change, false if there was not.
+     */
+    public boolean localFilesChanged() {
+        return fileWatcher.poll() != null;
+    }
+    
+    /**
+     * 
+     * @return true if tagFile is modified
+     */
+    public boolean tagFileChanged(){
+        for(WatchEvent<?> event: tagKey.pollEvents()){
+            WatchEvent<Path> pathEvent = (WatchEvent<Path>)event;
+            WatchEvent.Kind<?> kind = pathEvent.kind();
             
-            for (File sub : files) {
-                String subCloud = "/" + f.toPath().getParent().relativize(sub.toPath()).toString().replace("\\", "/");
-                String subLocal = sub.getAbsolutePath();
-                tags.add(new Tag(subCloud, subLocal));
-            }
-        } else {
-            tags.add(new Tag(cloudPath, localPath));
+            return kind == ENTRY_MODIFY;
         }
-
-        return true;
-    }
-    
-    private void getLocalSubfiles(Path rootPath, ArrayList<File> paths) {
-        File root = new File(rootPath.toUri());
-        for (File sub : root.listFiles()) {
-            if (sub.isDirectory()) {
-                getLocalSubfiles(sub.toPath(), paths);
-            } else {
-                paths.add(sub);
-            }
-        }
+        return false;
     }
     
     /**
-     * removes a tag based on the path on cloud
-     * @param cloudPath the path of the file on the cloud
-     * @return true if the file at cloud path exists
+     * Retrieves a set of WatchKeys of watched local directories.
+     * 
+     * @return An array list of WatchKeys.
      */
-    public boolean remove(String cloudPath){
-        int index = Collections.binarySearch(tags, new Tag(cloudPath,null));
-        if(index<=0)
-            return false;
-        tags.remove(index);
-        return true;
-    }
-    /**
-     * O(n) linear search :(
-     * @param local The local Path of the file
-     * @return The corresponding path of the file in cloud, null if there is not a corresponding file
-     */
-    public String getCloudPath(String local){
-       for(Tag t:tags){
-           if(t.localPath.equals(local))
-               return t.cloudPath;
-       }
-       return null;
-    }
-    /**
-     * Sorry Linear O(n)
-     * @param cloud the path of the file in cloud
-     * @return the corresponding path of the file in the local machine
-     */
-    public String getLocalPath(String cloud){
-        /*int index = Collections.binarySearch(tags, new Tag(cloud,null)); //Not working, fix later
-        if(index<=0)
-            return null;
-        return tags.get(index).localPath;*/
-        for(Tag t:tags)
-            if(t.cloudPath.equals(cloud))
-                return t.localPath;
-        return null;
-    }   
-    public int size(){
-        return tags.size();
-    }
-    public boolean write(){
-        try(FileWriter fw = new FileWriter(file)){
-            for(Tag t: tags){
-                fw.write(t.cloudPath+";"+t.localPath+"\n");
-            }
-        }catch(IOException e){
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-    public File[] getLocalFiles(){
-        File[] files = new File[size()];
-        int i=0;
-        for(Tag t:tags){
-            files[i] = new File(t.localPath);
-            i++;
-        }
-        return files;
-    }
-    public void printContents(){
-        for(Tag t:tags){
-            System.out.println(t.cloudPath+";"+t.localPath);
-        }
+    public ArrayList<WatchKey> getWatchedDirs() {
+        return watched;
     }
     
+    /**
+     * Clears all tagged files from the database.
+     */
     public void clear() {
+        for (WatchKey w : watched) {
+            w.cancel();
+        }
+        
+        watched.clear();
         tags.clear();
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public Path[] getLocalFiles(){
+        Path[] p = new Path[tags.values().size()];
+        return tags.values().toArray(p);
+    }
+    
+    public Path[] getRemoteFiles(){
+        Path[] p = new Path[tags.keySet().size()];
+        return tags.keySet().toArray(p);
+    }
+    /**
+     * Prints the contents of the database to stdout for debugging purposes.
+     */
+    public void printContents() {
+        for (Map.Entry<Path, Path> e : tags.entrySet()) {
+            System.out.println(e.getKey().toString() + ";" + e.getValue().toString());
+        }
     }
 }

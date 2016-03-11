@@ -15,8 +15,6 @@ public class CloudThread extends Thread {
     
     public void run() {
         cloud.authenticate();
-        cloud.readTagFile();
-        
         while (running) {
             System.out.println("Syncing Dropbox...");
             //Ping Respective Cloud Service

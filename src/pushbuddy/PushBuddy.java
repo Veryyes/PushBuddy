@@ -66,7 +66,7 @@ public class PushBuddy {
             File startup = new File(filepath);
             if(!startup.exists()){
                 try(FileWriter fw = new FileWriter(startup)){
-                    fw.write("cd C:\\Program Files (x86)\\PushBuddy\\PushBuddy\n");
+                    fw.write("cd C:\\Program Files (x86)\\PushBuddy Dev\\PushBuddy0.3\n");
                     fw.write("java -jar PushBuddy.jar");
                 }catch(java.io.IOException e){
                     e.printStackTrace();

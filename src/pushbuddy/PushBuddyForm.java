@@ -184,7 +184,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
             return;
         }
         final PopupMenu popup = new PopupMenu();
-        Image ico = Toolkit.getDefaultToolkit().getImage(PushBuddyForm.class.getResource("Final_pushbuddy_32px.png"));
+        Image ico = Toolkit.getDefaultToolkit().getImage(PushBuddyForm.class.getResource("pushbuddyTaskBar.png"));
         ico = ico.getScaledInstance(16, 16, Image.SCALE_DEFAULT);
         final TrayIcon trayIcon =
                 new TrayIcon(ico, "PushBuddy");
