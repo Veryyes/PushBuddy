@@ -3,11 +3,12 @@ package pushbuddy;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static java.nio.file.StandardWatchEventKinds.*;
-import java.util.Set;
 
 /**
  * A set of tagged files loaded from a file.
@@ -178,7 +179,7 @@ public class Tags {
      * @return 
      */
     public Path[] getLocalFiles(){
-        ArrayList<Path> local = (ArrayList<Path>)tags.values();
+        Collection<Path> local = tags.values();
         return local.toArray(new Path[local.size()]);
     }
     
