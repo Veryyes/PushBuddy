@@ -26,7 +26,15 @@ public class PushBuddy {
     public static void main(String[] args) throws InterruptedException {
         createStartupScript();
         
-        services.add(new CloudThread(new Dropbox("DropboxTags.txt", "dropboxAccess.txt")));
+        services.add(new CloudThread(new Dropbox("Dropbox", "www.dropbox.com")));
+        
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (UnsupportedLookAndFeelException e) {
+            System.err.println("Could not find native theme! Using default...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         
         for (CloudThread srv : services) {
             srv.start();
@@ -58,15 +66,6 @@ public class PushBuddy {
     }
     
     public static void startGui() {
-        try {
-            String theme = UIManager.getSystemLookAndFeelClassName();
-            UIManager.setLookAndFeel(theme);
-        } catch (UnsupportedLookAndFeelException e) {
-            System.err.println("Could not find native theme! Using default...");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new PushBuddyForm().setVisible(true);
