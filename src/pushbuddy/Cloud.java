@@ -30,16 +30,13 @@ public abstract class Cloud {
      * Iterate over all tagged remote files and apply changes.
      */
     public abstract void syncRemoteChanges();
+    
     /**
      * Block the current thread and don't return until changes are
      * detected.
      */
     public abstract void waitForChanges();
     
-    /**
-     * Uploads files in uploadList which could not be uploaded earlier due to connection issues
-     */
-  //  public abstract void pushInterruptedFiles();
     /**
      * Pings the cloud service until program gets a response
      */

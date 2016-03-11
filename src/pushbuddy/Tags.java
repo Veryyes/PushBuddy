@@ -1,16 +1,13 @@
 package pushbuddy;
 
-import com.dropbox.core.DbxException;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.nio.file.StandardWatchEventKinds.*;
+import java.util.Set;
 
 /**
  * A set of tagged files loaded from a file.
@@ -43,6 +40,7 @@ public class Tags {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
         rebuildData();
     }
     /**
@@ -53,13 +51,11 @@ public class Tags {
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                // Load tags.
-                // cloudPath not being used
-                String cloudPath = line.split(";")[0];
+                // String cloudPath = line.split(";")[0];
                 String localPath = line.split(";")[1];
                 add(Paths.get(localPath));
             }
-        }catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
         printContents();
@@ -72,17 +68,21 @@ public class Tags {
      * @param local A location on the local file system.
      */
     public void add(Path local) {
+        if (!local.toFile().exists()) {
+            return;
+        }
+        
         if (local.toFile().isFile()) {
             Path localRelative = local.getParent().relativize(local);
             Path cloud = Paths.get("/" + localRelative.toString());
             tags.put(cloud, local);
             return;
         }
-       
+
         try {
-            watched.add(local.register(fileWatcher, ENTRY_CREATE,
-                                               ENTRY_DELETE,
-                                               ENTRY_MODIFY));
+            watched.add(local.register(fileWatcher, ENTRY_CREATE, ENTRY_DELETE,
+                                       ENTRY_MODIFY));
+            
             Files.walk(local)
                  .forEach(sub -> {
                      if (sub.toFile().isDirectory()) {
@@ -148,6 +148,7 @@ public class Tags {
             
             return kind == ENTRY_MODIFY;
         }
+        
         return false;
     }
     
@@ -177,13 +178,13 @@ public class Tags {
      * @return 
      */
     public Path[] getLocalFiles(){
-        Path[] p = new Path[tags.values().size()];
-        return tags.values().toArray(p);
+        ArrayList<Path> local = (ArrayList<Path>)tags.values();
+        return local.toArray(new Path[local.size()]);
     }
     
     public Path[] getRemoteFiles(){
-        Path[] p = new Path[tags.keySet().size()];
-        return tags.keySet().toArray(p);
+        Set<Path> remote = tags.keySet();
+        return remote.toArray(new Path[remote.size()]);
     }
     /**
      * Prints the contents of the database to stdout for debugging purposes.
