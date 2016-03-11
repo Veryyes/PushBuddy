@@ -165,9 +165,14 @@ public class Dropbox extends Cloud {
             try {
                 DbxEntry ent = client.getMetadata(delta.lcPath);
                 if (ent.isFile()) {
-                    String local = tags.getLocalPath(ent.path).toString();
+                    Path local = tags.getLocalPath(ent.path);
+                    
+                    if (local == null) {
+                        System.err.println(ent.path + " doesn't exist locally! Ignoring.");
+                        continue;
+                    }
 
-                    try (FileOutputStream fos = new FileOutputStream(local)) {
+                    try (FileOutputStream fos = new FileOutputStream(local.toString())) {
                         client.getFile(ent.path, null, fos);
                     } catch (DbxException | IOException e) {
                         throw e;

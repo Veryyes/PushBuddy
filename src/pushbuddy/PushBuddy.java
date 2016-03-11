@@ -23,28 +23,14 @@ public class PushBuddy {
     /**
      * The main thread of the program.
      */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
         createStartupScript();
+        detectOsTheme();
         
         services.add(new CloudThread(new Dropbox("Dropbox", "www.dropbox.com")));
-        
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (UnsupportedLookAndFeelException e) {
-            System.err.println("Could not find native theme! Using default...");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        for (CloudThread srv : services) {
-            srv.start();
-        }
+        services.stream().forEach(srv -> srv.start());
         
         startGui();
-        
-        for (CloudThread srv : services) {
-            srv.join();
-        }
     }
     
     public static void createStartupScript(){
@@ -62,6 +48,16 @@ public class PushBuddy {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+    
+    public static void detectOsTheme() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (UnsupportedLookAndFeelException e) {
+            System.err.println("Could not find native theme! Using default...");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     

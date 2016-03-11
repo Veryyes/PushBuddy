@@ -47,7 +47,7 @@ public class Tags {
     
 
     /**
-     * 
+     * Parse the tag file and rebuild the database in memory.
      */
     public void rebuildData() {
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
