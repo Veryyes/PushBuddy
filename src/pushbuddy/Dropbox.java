@@ -133,9 +133,12 @@ public class Dropbox extends Cloud {
                     // If the gui option is selected, either  delete the local
                     // file or do nothing.
                 } else {
-                    // If this file is tagged, then upload it to the cloud.
+                    // If this is a file:
+                    //    If this file is tagged, then upload it to the cloud.
+                    // If this is a directory:
+                    //    If it contains any tagged files, upload them to the cloud.
                     File file = new File(fpath);
-                    if (file.isFile() || existsOnCloud(file.toPath())) {
+                    if (file.isFile() && existsOnCloud(file.toPath())) {
                         try {
                             upload(file);
                         } catch (IOException | DbxException e) {

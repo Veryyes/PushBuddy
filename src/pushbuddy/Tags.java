@@ -101,7 +101,7 @@ public class Tags {
                              e.printStackTrace();
                          }
                      } else {
-                         Path localRelative = sub.getParent().relativize(local);
+                         Path localRelative = local.getParent().relativize(sub);
                          String cloud = ("/" + localRelative).replace("\\", "/");
                          tags.put(cloud, sub);
                      }
