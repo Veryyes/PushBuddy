@@ -35,4 +35,11 @@ public class CloudThread extends Thread {
             cloud.waitForChanges();
         }
     }
+    
+    /**
+     * @return the Cloud associated with this CloudThread 
+     */
+    public Cloud getCloud(){
+        return cloud;
+    }
 }

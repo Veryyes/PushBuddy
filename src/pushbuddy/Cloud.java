@@ -104,6 +104,6 @@ public abstract class Cloud {
      * @return true if this remote path is already in the cloud's tag database
      */
     public boolean isDuplRemote(String remotePath){
-        return tags.getTags().containsKey(remotePath);
+        return tags.isDuplRemote(remotePath);
     }
 }

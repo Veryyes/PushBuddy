@@ -73,7 +73,7 @@ public class Tags {
      * If it is a directory, it is traversed recursively.
      * @param local location on the local file system
      */
-    public void add(Path local) {
+    public void add(Path local) {//TODO modify for duplicate names
         File target = local.toFile();
         
         if (!target.exists()) {
@@ -84,6 +84,7 @@ public class Tags {
             if (local.toFile().isFile()) {
                 Path localRelative = local.getParent().relativize(local);
                 String cloud = ("/" + localRelative).replace("\\", "/");
+                resolveRemoteDupl(cloud);
                 tags.put(cloud, local);
                 
                 watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE,
@@ -107,6 +108,7 @@ public class Tags {
                      } else {
                          Path localRelative = local.getParent().relativize(sub);
                          String cloud = ("/" + localRelative).replace("\\", "/");
+                         resolveRemoteDupl(cloud);
                          tags.put(cloud, sub);
                      }
                  });
@@ -208,6 +210,49 @@ public class Tags {
     public void printContents() {
         for (Map.Entry<String, Path> e : tags.entrySet()) {
             System.out.println(e.getKey() + ";" + e.getValue().toString());
+        }
+    }
+    
+    /**
+     * Checks for Duplicate remote paths in this tag database
+     * @param remotePath the remote path to check against
+     * @return true if this remote path is already in the tag database
+     */
+    public boolean isDuplRemote(String remotePath){
+        return tags.containsKey(remotePath);
+    }
+    
+    /**
+     * Resolves Duplicate names in the remote path if it needs to be resolved. Otherwise, no change
+     * Follows the renaming scheme: file, file(1), file(2), ... , file(n)
+     * @param remotePath the remote path to resolve
+     */
+    public void resolveRemoteDupl(String remotePath){
+        if(isDuplRemote(remotePath)){//Check for the first duplicate copy
+            int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
+            if(extensionIndex>=0){
+                String newRemotePath = remotePath.substring(0,extensionIndex)+"(1)";
+                String extension = remotePath.substring(extensionIndex);
+                remotePath = newRemotePath + extension;
+            }else{
+                remotePath+="(1)";
+            }
+        }
+        System.err.print(remotePath);
+        for(int i=2;isDuplRemote(remotePath);i++){ //Keep checking if there is more than 2 duplicates 
+            System.err.print("UHUGHUEHGUH");
+            int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
+            if(extensionIndex>=0){
+                String newRemotePath = remotePath.substring(0,extensionIndex);
+                newRemotePath = new StringBuilder(newRemotePath).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+                newRemotePath = new StringBuilder(newRemotePath).reverse().toString();
+                String extension = remotePath.substring(extensionIndex);
+                remotePath = newRemotePath + extension;
+
+            }else{
+                remotePath = new StringBuilder(remotePath).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+                remotePath = new StringBuilder(remotePath).reverse().toString();
+            }    
         }
     }
 }

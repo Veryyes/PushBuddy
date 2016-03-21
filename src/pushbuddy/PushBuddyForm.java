@@ -5,7 +5,6 @@
  */
 package pushbuddy;
 
-import com.dropbox.core.DbxException;
 import java.awt.AWTException;
 import java.awt.Image;
 import java.awt.MenuItem;
@@ -138,9 +137,37 @@ public class PushBuddyForm extends javax.swing.JFrame {
         switch(service){
             case "Dropbox":
                 try(FileWriter fw = new FileWriter("DropboxTags.txt",true)){
+                    Cloud cloud = PushBuddy.services.get(0).getCloud();//TODO want a not hardcoded way to get Dropbox Obj
                     for(java.io.File f:selectedFiles){
                         String remotePath = "/"+f.getName();
-                        fw.write("/"+f.getName()+";"+f.getAbsolutePath()+"\n");
+
+                        if(cloud.isDuplRemote(remotePath)){//Check for the first duplicate copy
+                            int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
+                            if(extensionIndex>=0){
+                                String newRemotePath = remotePath.substring(0,extensionIndex)+"(1)";
+                                String extension = remotePath.substring(extensionIndex);
+                                remotePath = newRemotePath + extension;
+                            }else{
+                                remotePath+="(1)";
+                            }
+                        }
+
+                        for(int i=2;cloud.isDuplRemote(remotePath);i++){ //Keep checking if there is more than 2 duplicates 
+                            
+                            int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
+                            if(extensionIndex>=0){
+                                String newRemotePath = remotePath.substring(0,extensionIndex);
+                                newRemotePath = new StringBuilder(newRemotePath).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+                                newRemotePath = new StringBuilder(newRemotePath).reverse().toString();
+                                String extension = remotePath.substring(extensionIndex);
+                                remotePath = newRemotePath + extension;
+                                
+                            }else{
+                                remotePath = new StringBuilder(remotePath).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+                                remotePath = new StringBuilder(remotePath).reverse().toString();
+                            }    
+                        }                        
+                        fw.write(remotePath+";"+f.getAbsolutePath()+"\n");
                     }
                 }catch(IOException e){
                     e.printStackTrace();
