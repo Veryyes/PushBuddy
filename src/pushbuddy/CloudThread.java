@@ -1,27 +1,38 @@
 package pushbuddy;
 
 /**
- * Synchronizes changes from another thread.
+ * Synchronizes a cloud service with the local machine.
  * 
- * @author Brandon
+ * @author Brandon Wong
+ * @author Eyal Kalderon
  */
 public class CloudThread extends Thread {
     private Cloud cloud;
     public static volatile boolean running = true;
     
+    /**
+     * Initializes a new thread with the given cloud service.
+     * @param serviceToUse the cloud service to sync from
+     */
     CloudThread(Cloud serviceToUse) {
         cloud = serviceToUse;
     }
     
+    /**
+     * Executes the service on a new thread.
+     */
     public void run() {
         cloud.authenticate();
+        
         while (running) {
-            System.out.println("Syncing Dropbox...");
-            //Ping Respective Cloud Service
-            cloud.pingService();
+            System.out.println("Pinging cloud service...");
+            cloud.verifyIfUp();
+            System.out.println("Syncing local changes...");
             cloud.syncLocalChanges();
+            System.out.println("Syncing remote changes...");
             cloud.syncRemoteChanges();
-            cloud.waitForChanges(); //Program waits at this method to look for changes
+            System.out.println("Waiting for changes...");
+            cloud.waitForChanges();
         }
     }
 }
