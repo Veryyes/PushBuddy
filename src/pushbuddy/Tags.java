@@ -57,7 +57,7 @@ public class Tags {
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String cloudPath = line.split(";")[0];
+                //String cloudPath = line.split(";")[0];
                 String localPath = line.split(";")[1];
                 add(Paths.get(localPath));
             }
@@ -199,6 +199,9 @@ public class Tags {
         return remote.toArray(new String[remote.size()]);
     }
     
+    public HashMap<String, Path> getTags(){
+        return tags;
+    }
     /**
      * Prints the contents of the database to stdout for debugging purposes.
      */

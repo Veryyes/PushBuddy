@@ -139,6 +139,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
             case "Dropbox":
                 try(FileWriter fw = new FileWriter("DropboxTags.txt",true)){
                     for(java.io.File f:selectedFiles){
+                        String remotePath = "/"+f.getName();
                         fw.write("/"+f.getName()+";"+f.getAbsolutePath()+"\n");
                     }
                 }catch(IOException e){
