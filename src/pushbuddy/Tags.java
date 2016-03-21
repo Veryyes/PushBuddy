@@ -47,13 +47,17 @@ public class Tags {
     
 
     /**
+     * Called when WatchKey of database file is modified
      * Parse the tag file and rebuild the database in memory.
      */
     public void rebuildData() {
+        System.out.println("Previous Tag Database");
+        printContents();
+        System.out.println("#####################\nNew Tag Database");
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                // String cloudPath = line.split(";")[0];
+                String cloudPath = line.split(";")[0];
                 String localPath = line.split(";")[1];
                 add(Paths.get(localPath));
             }
