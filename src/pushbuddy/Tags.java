@@ -84,7 +84,9 @@ public class Tags {
             if (local.toFile().isFile()) {
                 Path localRelative = local.getParent().relativize(local);
                 String cloud = ("/" + localRelative).replace("\\", "/");
-                resolveRemoteDupl(cloud);
+                //System.out.println("OLD NAME: "+cloud);
+                cloud = resolveRemoteDupl(cloud);
+                //System.out.println("NEW NAME (AFTER METHOD): "+cloud);
                 tags.put(cloud, local);
                 
                 watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE,
@@ -108,7 +110,7 @@ public class Tags {
                      } else {
                          Path localRelative = local.getParent().relativize(sub);
                          String cloud = ("/" + localRelative).replace("\\", "/");
-                         resolveRemoteDupl(cloud);
+                         cloud = resolveRemoteDupl(cloud);
                          tags.put(cloud, sub);
                      }
                  });
@@ -227,7 +229,7 @@ public class Tags {
      * Follows the renaming scheme: file, file(1), file(2), ... , file(n)
      * @param remotePath the remote path to resolve
      */
-    public void resolveRemoteDupl(String remotePath){
+    public String resolveRemoteDupl(String remotePath){//TODO make return String, remotePath is being passed be value
         if(isDuplRemote(remotePath)){//Check for the first duplicate copy
             int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
             if(extensionIndex>=0){
@@ -238,7 +240,7 @@ public class Tags {
                 remotePath+="(1)";
             }
         }
-        System.err.print(remotePath);
+        //System.err.println(remotePath);
         for(int i=2;isDuplRemote(remotePath);i++){ //Keep checking if there is more than 2 duplicates 
             System.err.print("UHUGHUEHGUH");
             int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
@@ -254,5 +256,8 @@ public class Tags {
                 remotePath = new StringBuilder(remotePath).reverse().toString();
             }    
         }
+        //printContents();
+        //System.out.println("NEW NAME (IN METHOD): "+remotePath);
+        return remotePath;
     }
 }

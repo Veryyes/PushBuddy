@@ -152,7 +152,8 @@ public class PushBuddyForm extends javax.swing.JFrame {
                                 remotePath+="(1)";
                             }
                         }
-
+                        
+                        
                         for(int i=2;cloud.isDuplRemote(remotePath);i++){ //Keep checking if there is more than 2 duplicates 
                             
                             int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
