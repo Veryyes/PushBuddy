@@ -51,9 +51,6 @@ public class Tags {
      * Parse the tag file and rebuild the database in memory.
      */
     public void rebuildData() {
-        System.out.println("Previous Tag Database");
-        printContents();
-        System.out.println("#####################\nNew Tag Database");
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -64,8 +61,9 @@ public class Tags {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
-        printContents();
+        //printWatchedDirs();
+        //printContents();
+
     }
     
     /**
@@ -74,6 +72,7 @@ public class Tags {
      * @param local location on the local file system
      */
     public void add(Path local) {//TODO modify for duplicate names
+        //System.out.println("Adding Local File: "+local);
         File target = local.toFile();
         
         if (!target.exists()) {
@@ -82,6 +81,7 @@ public class Tags {
         
         try {
             if (local.toFile().isFile()) {
+                //System.out.println("\tAdding File: "+local);
                 Path localRelative = local.getParent().relativize(local);
                 String cloud = ("/" + localRelative).replace("\\", "/");
                 //System.out.println("OLD NAME: "+cloud);
@@ -96,10 +96,11 @@ public class Tags {
             
             watched.add(local.register(fileWatcher, ENTRY_CREATE, ENTRY_DELETE,
                                        ENTRY_MODIFY));
-            
-            Files.walk(local)
+            //System.out.println("\tWalking Through Local File: "+local);
+            Files.walk(local)//Walks through all the files recursively
                  .forEach(sub -> {
                      if (sub.toFile().isDirectory()) {
+                         //System.out.println("\t\tDirectory: "+sub);
                          try {
                              watched.add(sub.register(fileWatcher, ENTRY_CREATE,
                                                       ENTRY_DELETE,
@@ -108,15 +109,82 @@ public class Tags {
                              e.printStackTrace();
                          }
                      } else {
+                         //System.out.println("\t\tFile: "+sub);
                          Path localRelative = local.getParent().relativize(sub);
                          String cloud = ("/" + localRelative).replace("\\", "/");
-                         cloud = resolveRemoteDupl(cloud);
+                         cloud = resolveRemoteDuplDirectory(local.toString(), cloud);
+                         //System.out.println("\t\t\tCloudName: "+cloud);
                          tags.put(cloud, sub);
                      }
                  });
         } catch (IOException e) {
             System.err.println(local + " could not be accessed!");
         }
+    }
+    /**
+     * Checks if there is a folder on cloud with the same name as param folder, but are actually different folders on the local machine
+     * @param folder The Path of the folder tagged
+     * @return 
+     */
+    public boolean isDuplRemoteDirectory(String folder){
+        //String selectedFolderName = '/'+folder.getParent().relativize(folder).toString();
+        String selectedFolderName = folder.substring(folder.lastIndexOf(File.separator));
+        if(PushBuddy.os.equals("Windows"))
+            selectedFolderName = selectedFolderName.replace('\\','/');
+        //System.out.println("selectedFolderName "+selectedFolderName);
+        for (Map.Entry<String, Path> e : tags.entrySet()) {
+            //System.out.println("\t"+e.getKey().substring(0,selectedFolderName.length())+"\tOriginal: "+e.getKey()+"\tValue: "+e.getValue());
+            if(selectedFolderName.equals(e.getKey().substring(0,selectedFolderName.length()))&&numMatches(e.getKey(),"/")!=1){//Root cloud paths are equal - Potential duplicate
+                if(PushBuddy.os.equals("Windows"))
+                       selectedFolderName = selectedFolderName.replace('/','\\');
+                String valuePath = e.getValue().toString();
+                int cutoff = valuePath.indexOf(selectedFolderName)+selectedFolderName.length();
+                //System.out.println("\t\t"+folder);
+                if(!valuePath.substring(0,cutoff).equals(folder))//Here on the local machine, they have the same folder name, but are different folders
+                    return true;
+            }        
+        }
+        return false;
+    }
+    /**
+     * Returns the number of times matcher appears in str
+     * @param str
+     * @param matcher
+     * @return 
+     */
+    private int numMatches(String str, String matcher){
+        int count=0;
+        int index=0;
+        while ((index = str.indexOf(matcher, index)) != -1) {
+            count++;
+            index += matcher.length();
+        }
+        return count;
+    }
+    public String resolveRemoteDuplDirectory(String folder, String remotePath){
+        if(isDuplRemoteDirectory(folder)){
+            //String selectedFolderName = '/'+folder.getParent().relativize(folder).toString();
+            String selectedFolderName = folder.substring(folder.lastIndexOf(File.separator));
+            if(PushBuddy.os.equals("Windows"))
+                selectedFolderName = selectedFolderName.replace('\\','/');
+            String before = remotePath.substring(0, selectedFolderName.length())+"(1)";
+            String after = remotePath.substring(selectedFolderName.length());
+            remotePath = before+after;
+            folder+="(1)";
+            //rebuild Path folder
+        }
+        //System.out.println(folder);
+        //System.out.print(remotePath+" -> ");
+        for(int i=2;isDuplRemoteDirectory(folder);i++){
+            String before = remotePath.substring(0,remotePath.indexOf('/', 1));
+            before = new StringBuilder(before).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+            before = new StringBuilder(before).reverse().toString();
+            String after = remotePath.substring(remotePath.indexOf('/',1));
+            remotePath = before+after;
+            folder = new StringBuilder(folder).reverse().toString().replaceFirst("\\)\\d+\\(",")"+i+"(");
+            folder = new StringBuilder(folder).reverse().toString();            
+        }           
+        return remotePath;
     }
     
     /**
@@ -225,11 +293,12 @@ public class Tags {
     }
     
     /**
-     * Resolves Duplicate names in the remote path if it needs to be resolved. Otherwise, no change
+     * Resolves Duplicate names in the remote file path if it needs to be resolved. Otherwise, no change
      * Follows the renaming scheme: file, file(1), file(2), ... , file(n)
      * @param remotePath the remote path to resolve
+     * @return the renamed remote file path
      */
-    public String resolveRemoteDupl(String remotePath){//TODO make return String, remotePath is being passed be value
+    public String resolveRemoteDupl(String remotePath){
         if(isDuplRemote(remotePath)){//Check for the first duplicate copy
             int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
             if(extensionIndex>=0){
@@ -242,7 +311,6 @@ public class Tags {
         }
         //System.err.println(remotePath);
         for(int i=2;isDuplRemote(remotePath);i++){ //Keep checking if there is more than 2 duplicates 
-            System.err.print("UHUGHUEHGUH");
             int extensionIndex = remotePath.indexOf('.');//TODO this doesnt work for things named like ".gitignore"
             if(extensionIndex>=0){
                 String newRemotePath = remotePath.substring(0,extensionIndex);
@@ -259,5 +327,13 @@ public class Tags {
         //printContents();
         //System.out.println("NEW NAME (IN METHOD): "+remotePath);
         return remotePath;
+    }
+    
+
+    public void printWatchedDirs(){
+        for(WatchKey k:watched){
+            System.out.println("Watched Dirs:");
+            System.out.println("\t"+k.toString());
+        }
     }
 }

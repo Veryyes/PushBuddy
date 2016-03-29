@@ -100,7 +100,7 @@ public class Dropbox extends Cloud {
     private void upload(File file) throws DbxException, IOException {
         if (file.isFile()) {
             String cloudPath = tags.getRemotePath(file.toPath());
-            System.err.println("Uploading " + file);
+            System.err.println("Uploading " + file+"\t to CloudPath: "+cloudPath);
             FileInputStream fis = new FileInputStream(file);
             DbxEntry.File uploaded = client.uploadFile(cloudPath, DbxWriteMode.force(), file.length(), fis);
             fis.close();
