@@ -19,6 +19,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 public class PushBuddy {
     public static final String name = "PushBuddy";
     public static ArrayList<CloudThread> services = new ArrayList();
+    public static String os;
     
     /**
      * The main thread of the program.
@@ -35,6 +36,7 @@ public class PushBuddy {
     
     public static void createStartupScript(){
         if (System.getProperty("os.name").contains("Windows")) {
+            os = "Windows";
             String roamingFolder = System.getenv("APPDATA");
             String scriptPath = "\\Microsoft\\Windows\\Start Menu\\Programs"
                               + "\\Startup\\PushBuddyStart.bat";

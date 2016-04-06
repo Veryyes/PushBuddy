@@ -5,7 +5,6 @@
  */
 package pushbuddy;
 
-import com.dropbox.core.DbxException;
 import java.awt.AWTException;
 import java.awt.Image;
 import java.awt.MenuItem;
@@ -45,6 +44,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
 
         fileChooser = new javax.swing.JFileChooser();
         fileChooser.setFileSelectionMode(javax.swing.JFileChooser.FILES_AND_DIRECTORIES);
+        fileChooser.setControlButtonsAreShown(false);
         serviceBox = new javax.swing.JComboBox<>();
         tagBtn = new javax.swing.JButton();
         doneBtn = new javax.swing.JButton();
@@ -102,7 +102,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
                         .addComponent(serviceBox, 0, 391, Short.MAX_VALUE)
                         .addGap(30, 30, 30)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(doneBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 81, Short.MAX_VALUE)
+                            .addComponent(doneBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE)
                             .addComponent(tagBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(21, 21, 21))
                     .addGroup(layout.createSequentialGroup()
@@ -216,8 +216,7 @@ public class PushBuddyForm extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }//GEN-LAST:event_formWindowOpened
-    
-    
+  
     private java.io.File[] selectedFiles;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton doneBtn;

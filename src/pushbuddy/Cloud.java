@@ -97,4 +97,13 @@ public abstract class Cloud {
             }
         }
     }
+    
+    /**
+     * Checks for Duplicate remote paths in this cloud's tag database
+     * @param remotePath the remote path to check against
+     * @return true if this remote path is already in the cloud's tag database
+     */
+    public boolean isDuplRemote(String remotePath){
+        return tags.isDuplRemote(remotePath);
+    }
 }
