@@ -3,6 +3,7 @@ build/
 *Tags.txt
 *Access.txt
 manifest.mf
+*.class
 
 # Backup files
 .DS_Store
