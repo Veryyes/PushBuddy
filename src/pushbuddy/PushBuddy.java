@@ -17,23 +17,26 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author Eyal Kalderon
  */
 public class PushBuddy {
-    public static final String name = "PushBuddy";
-    public static ArrayList<CloudThread> services = new ArrayList();
+    public static final String name = "PushBuddy2";
+    public static ArrayList<CloudThread> services = new ArrayList<>();
     public static String os;
     
     /**
      * The main thread of the program.
      */
     public static void main(String[] args) throws Exception {
-        createStartupScript();
-        detectOsTheme();
+        //createStartupScript();
         
+		/*
         services.add(new CloudThread(new Dropbox("Dropbox", "www.dropbox.com")));
+		
         services.stream().forEach(srv -> srv.start());
-        
-        startGui();
+        */
+		
+        Gui.startGUI(args);
     }
     
+	/*
     public static void createStartupScript(){
         if (System.getProperty("os.name").contains("Windows")) {
             os = "Windows";
@@ -51,23 +54,7 @@ public class PushBuddy {
                 }
             }
         }
-    }
+    }*/
     
-    public static void detectOsTheme() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (UnsupportedLookAndFeelException e) {
-            System.err.println("Could not find native theme! Using default...");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     
-    public static void startGui() {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new PushBuddyForm().setVisible(true);
-            }
-        });
-    }
 }

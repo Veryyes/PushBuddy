@@ -51,7 +51,7 @@
                         </ImageView>
                      </children>
                   </HBox>
-                  <Button fx:id="tagBtn" mnemonicParsing="false" text="Tag">
+                  <Button fx:id="tagBtnDbx" mnemonicParsing="false" text="Tag">
                      <font>
                         <Font name="Franklin Gothic Medium Cond" size="16.0" />
                      </font>
@@ -62,7 +62,7 @@
                         <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
                      </padding>
                   </Button>
-                  <Button fx:id="viewBtn" mnemonicParsing="false" text="View">
+                  <Button fx:id="viewBtnDbx" mnemonicParsing="false" text="View">
                      <font>
                         <Font name="Franklin Gothic Medium" size="16.0" />
                      </font>
