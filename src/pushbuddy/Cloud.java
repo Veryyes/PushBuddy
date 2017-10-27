@@ -14,6 +14,7 @@ public abstract class Cloud {
     protected final String domain;
     protected File authFile;
     protected Tags tags;
+	protected boolean enabled;
     
     /**
      * Initializes a new cloud service.
@@ -29,6 +30,7 @@ public abstract class Cloud {
         authFile = new File(name + "Access.txt");
         tags = new Tags(name + "Tags.txt");
         this.domain = domain;
+		enabled=true;
     }
     
     /**
@@ -71,7 +73,6 @@ public abstract class Cloud {
                 if (tags.localFilesChanged()) {
                     fileChanged = true;
                 } else if (tags.tagFileChanged()) {
-                    tags.clear();
                     tags.rebuildData();
                     fileChanged = true;
                 }

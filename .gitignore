@@ -4,6 +4,7 @@ build/
 *Access.txt
 manifest.mf
 *.class
+./docs/*
 
 # Backup files
 .DS_Store

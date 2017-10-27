@@ -12,13 +12,13 @@ import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
  * Maps relationships between cloud files and local files.
- * 
+ * @author Brandon Wong
  * @author Eyal Kalderon
  */
 public class Tags {
     private File tagFile;
     private WatchKey tagKey;
-    private HashMap<String, Path> tags;
+    private HashMap<String, Path> tags; //Cloud then Local
     private ArrayList<WatchKey> watched;
     private WatchService fileWatcher;
 
@@ -51,6 +51,7 @@ public class Tags {
      * Parse the tag file and rebuild the database in memory.
      */
     public void rebuildData() {
+		clear();
         try (BufferedReader br = new BufferedReader(new FileReader(tagFile))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -78,29 +79,24 @@ public class Tags {
         if (!target.exists()) {
             return;
         }
-        
+		
         try {
             if (local.toFile().isFile()) {
-                //System.out.println("\tAdding File: "+local);
                 Path localRelative = local.getParent().relativize(local);
                 String cloud = ("/" + localRelative).replace("\\", "/");
-                //System.out.println("OLD NAME: "+cloud);
                 cloud = resolveRemoteDupl(cloud);
-                //System.out.println("NEW NAME (AFTER METHOD): "+cloud);
                 tags.put(cloud, local);
-                
                 watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE,
                                                        ENTRY_DELETE, ENTRY_MODIFY));
                 return;
             }
-            
+            //Else if it is a directory:
             watched.add(local.register(fileWatcher, ENTRY_CREATE, ENTRY_DELETE,
                                        ENTRY_MODIFY));
             //System.out.println("\tWalking Through Local File: "+local);
             Files.walk(local)//Walks through all the files recursively
                  .forEach(sub -> {
-                     if (sub.toFile().isDirectory()) {
-                         //System.out.println("\t\tDirectory: "+sub);
+                     if (sub.toFile().isDirectory()) { //Add a watcher for each directory
                          try {
                              watched.add(sub.register(fileWatcher, ENTRY_CREATE,
                                                       ENTRY_DELETE,
@@ -108,12 +104,10 @@ public class Tags {
                          } catch (IOException e) {
                              e.printStackTrace();
                          }
-                     } else {
-                         //System.out.println("\t\tFile: "+sub);
+                     } else { //If we stumble upon a file add it
                          Path localRelative = local.getParent().relativize(sub);
                          String cloud = ("/" + localRelative).replace("\\", "/");
                          cloud = resolveRemoteDuplDirectory(local.toString(), cloud);
-                         //System.out.println("\t\t\tCloudName: "+cloud);
                          tags.put(cloud, sub);
                      }
                  });
@@ -207,7 +201,7 @@ public class Tags {
                 return e.getKey();
             }
         }
-        return "";
+        return null;
     }
     
     /**

@@ -1,1 +1,1 @@
-javac -cp ./src src/pushbuddy/*.java -Xlint
+javac -cp /src:/lib/* src/pushbuddy/*.java -Xlint

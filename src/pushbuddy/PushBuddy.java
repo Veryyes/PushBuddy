@@ -7,8 +7,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.*;
 import java.util.ArrayList;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * The PushBuddy desktop client.
@@ -32,8 +30,14 @@ public class PushBuddy {
 		
         services.stream().forEach(srv -> srv.start());
         */
-		
-        Gui.startGUI(args);
+		Thread t = new Thread(){
+			public void run(){
+				Gui.startGUI(args);
+			}
+		};
+        t.start();
+		Dropbox d = new Dropbox("Dropbox", "www.dropbox.com");
+		d.authenticate();
     }
     
 	/*
