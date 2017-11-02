@@ -1,1 +1,1 @@
-java -cp ./src pushbuddy.PushBuddy
+java -cp ./src:./lib/* pushbuddy.PushBuddy
