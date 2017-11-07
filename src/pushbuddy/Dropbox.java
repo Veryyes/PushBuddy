@@ -26,11 +26,13 @@ public class Dropbox extends Cloud {
     private DbxClientV2 client;
 	private DbxRequestConfig config;
 	private DbxAppInfo info;
+	private DbxUserFilesRequests fileRequests;
  //   private DbxDelta<DbxEntry> changes = null;
     private String returnedFiles = null;
 	
     public Dropbox(String tagFile, String authFilePath) {
-        super(tagFile, authFilePath); 
+        super(tagFile, authFilePath);
+		//fileRequests = new DbxUserFilesRequests(client);
     }
     
 	public void test(){
@@ -72,7 +74,7 @@ public class Dropbox extends Cloud {
         } catch (DbxException e) {
             e.printStackTrace();
         }*/
-		test();
+
     }
     
     private void useExistingAuth() {
@@ -150,7 +152,7 @@ public class Dropbox extends Cloud {
     
     @Override
     public void syncLocalChanges() { //TODO consider migration to Cloud.java
-        /*for (Path p : tags.getLocalFiles()) {
+        for (Path p : tags.getLocalFiles()) {
             if (!existsOnCloud(p)) {
                 File file = p.toFile();
                 
@@ -193,7 +195,7 @@ public class Dropbox extends Cloud {
             if (!valid) {
                 break;
             }
-        }*/
+        }
     }
 
     @Override

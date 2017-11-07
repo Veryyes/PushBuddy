@@ -32,6 +32,10 @@ public abstract class Cloud {
         this.domain = domain;
 		enabled=true;
     }
+	
+	public Tags getTags(){
+		return tags;
+	}
     
     /**
      * Attempts to authenticate with the cloud API server(s).

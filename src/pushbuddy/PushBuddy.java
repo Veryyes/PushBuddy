@@ -23,23 +23,35 @@ public class PushBuddy {
      * The main thread of the program.
      */
     public static void main(String[] args) throws Exception {
+		whatOS();
         //createStartupScript();
-        
-		/*
-        services.add(new CloudThread(new Dropbox("Dropbox", "www.dropbox.com")));
+        //Temporary
+		Dropbox dbx = new Dropbox("Dropbox", "www.dropbox.com");
+		//dbx.authenticate();
+		
+        services.add(new CloudThread(dbx));
+
 		
         services.stream().forEach(srv -> srv.start());
-        */
+        
+		
 		Thread t = new Thread(){
 			public void run(){
 				Gui.startGUI(args);
 			}
 		};
         t.start();
-		Dropbox d = new Dropbox("Dropbox", "www.dropbox.com");
-		d.authenticate();
+		
+		
     }
     
+	private static void whatOS(){//TODO make better
+		if (System.getProperty("os.name").contains("Windows"))
+            os = "Windows";
+		else
+			os = "unix";
+	}
+	
 	/*
     public static void createStartupScript(){
         if (System.getProperty("os.name").contains("Windows")) {

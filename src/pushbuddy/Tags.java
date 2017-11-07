@@ -44,7 +44,10 @@ public class Tags {
         
         rebuildData();
     }
-    
+
+	public File getTagFile(){
+		return tagFile;
+	}
 
     /**
      * Called when WatchKey of database file is modified
@@ -68,7 +71,7 @@ public class Tags {
     }
     
     /**
-     * Tags a local file to be synced to the cloud.
+     * Tags a local file or directory to be watched for sync-ing to the cloud.
      * If it is a directory, it is traversed recursively.
      * @param local location on the local file system
      */
@@ -86,8 +89,7 @@ public class Tags {
                 String cloud = ("/" + localRelative).replace("\\", "/");
                 cloud = resolveRemoteDupl(cloud);
                 tags.put(cloud, local);
-                watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE,
-                                                       ENTRY_DELETE, ENTRY_MODIFY));
+                watched.add(local.getParent().register(fileWatcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY));
                 return;
             }
             //Else if it is a directory:
@@ -156,7 +158,9 @@ public class Tags {
         return count;
     }
     public String resolveRemoteDuplDirectory(String folder, String remotePath){
+		System.out.println(folder);
         if(isDuplRemoteDirectory(folder)){
+			System.out.println("YES");
             //String selectedFolderName = '/'+folder.getParent().relativize(folder).toString();
             String selectedFolderName = folder.substring(folder.lastIndexOf(File.separator));
             if(PushBuddy.os.equals("Windows"))

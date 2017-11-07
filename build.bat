@@ -1,1 +1,1 @@
-javac -cp .\src;.\lib\* src\pushbuddy\*.java
+javac -cp .\src;.\lib\* src\pushbuddy\*.java 
